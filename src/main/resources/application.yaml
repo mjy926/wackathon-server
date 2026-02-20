@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: name
+
+  datasource:
+    url: jdbc:mysql://localhost:3307/mydb?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: user
+    password: password
