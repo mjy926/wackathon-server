@@ -14,4 +14,4 @@ spring:
 
 
 firebase:
-  service-account-path: /opt/service_key.json
+  service-account-path: ./service_key.json
