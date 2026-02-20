@@ -29,8 +29,13 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+
+	/* swagger */
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+
 	/* push notification */
 	implementation("com.google.firebase:firebase-admin:9.2.0")
+
 
 }
 
