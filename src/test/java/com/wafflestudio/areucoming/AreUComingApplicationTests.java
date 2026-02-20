@@ -1,10 +1,10 @@
-package com.wafflestudio.name;
+package com.wafflestudio.areucoming;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class NameApplicationTests {
+class AreUComingApplicationTests {
 
 	@Test
 	void contextLoads() {

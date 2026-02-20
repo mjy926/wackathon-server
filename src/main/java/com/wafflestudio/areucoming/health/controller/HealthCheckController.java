@@ -1,4 +1,4 @@
-package com.wafflestudio.name.health.controller;
+package com.wafflestudio.areucoming.health.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
