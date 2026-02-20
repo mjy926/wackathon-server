@@ -28,6 +28,10 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	/* push notification */
+	implementation("com.google.firebase:firebase-admin:9.2.0")
+
 }
 
 tasks.withType<Test> {

@@ -10,3 +10,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+
+
+firebase:
+  service-account-path: /opt/service_key.json
