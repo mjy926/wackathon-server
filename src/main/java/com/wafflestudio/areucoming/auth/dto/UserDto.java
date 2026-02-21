@@ -9,5 +9,5 @@ import lombok.RequiredArgsConstructor;
 public class UserDto {
     private final Long id;
     private final String email;
-    private final String password;
+    private final String nickname;
 }
