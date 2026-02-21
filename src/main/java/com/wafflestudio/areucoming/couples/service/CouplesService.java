@@ -31,4 +31,12 @@ public class CouplesService {
         if (couples == null) throw new ResponseStatusException(NOT_FOUND, "Couple not found");
         return couples;
     }
+
+    public void deleteCouples(String email){
+        User user = userRepository.findByEmail(email);
+        Long userId = user.getId();
+        Couples toDelete = couplesRepository.findByUser1IdOrUser2Id(userId, userId);
+        if(toDelete == null) throw new ResponseStatusException(NOT_FOUND, "Couple not found");
+        couplesRepository.deleteById(toDelete.getId());
+    }
 }

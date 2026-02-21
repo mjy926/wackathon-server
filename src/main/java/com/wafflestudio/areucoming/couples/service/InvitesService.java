@@ -1,5 +1,6 @@
 package com.wafflestudio.areucoming.couples.service;
 
+import com.wafflestudio.areucoming.couples.exceptions.ExpiredInvitesException;
 import com.wafflestudio.areucoming.couples.model.Code;
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.model.Invites;
@@ -44,6 +45,13 @@ public class InvitesService {
         User user1 = userRepository.findByEmail(email);
         Invites invites = invitesRepository.findByCode(code).get();
         User user2 = userRepository.findById(invites.getInviterUserId()).get();
+        if(invites.getUsedAt() != null){
+            throw new ExpiredInvitesException("used invites");
+        }
+        if(LocalDateTime.now().isAfter(invites.getExpiresAt())){
+            throw new ExpiredInvitesException("expired invites");
+        }
+
         invites.setUsedAt(LocalDateTime.now());
         Couples c = Couples.builder()
                 .user1Id(user1.getId())
@@ -51,6 +59,9 @@ public class InvitesService {
                 .createdAt(LocalDateTime.now())
                 .build();
         couplesRepository.save(c);
+
+        Code toDelete = codeRepository.findByCode(code);
+        codeRepository.delete(toDelete);
         return invitesRepository.save(invites);
     }
 

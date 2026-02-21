@@ -51,11 +51,17 @@ public class CouplesController {
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
-    @GetMapping("/info")
+    @GetMapping("/profile")
     public ResponseEntity<CouplesResponse> getCouplesInfo(@AuthenticationPrincipal String email){
         Couples couples = couplesService.getCouplesInfo(email);
         CouplesResponse res = new CouplesResponse(couples.getId(), couples.getUser1Id(), couples.getUser2Id());
 
         return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @DeleteMapping("")
+    public ResponseEntity<Void> deleteCouples(@AuthenticationPrincipal String email){
+        couplesService.deleteCouples(email);
+        return ResponseEntity.noContent().build();
     }
 }
