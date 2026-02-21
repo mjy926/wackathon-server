@@ -1,7 +1,7 @@
 package com.wafflestudio.areucoming.sessions.service;
 
-import com.wafflestudio.areucoming.couples.model.Couple;
-import com.wafflestudio.areucoming.couples.service.CoupleService;
+import com.wafflestudio.areucoming.couples.model.Couples;
+import com.wafflestudio.areucoming.couples.service.CouplesService;
 import com.wafflestudio.areucoming.sessions.model.*;
 import com.wafflestudio.areucoming.sessions.repository.SessionPointRepository;
 import com.wafflestudio.areucoming.sessions.repository.SessionRepository;
@@ -27,13 +27,20 @@ import static org.springframework.http.HttpStatus.*;
 public class SessionService {
     private final SessionRepository sessionRepository;
     private final SessionPointRepository sessionPointRepository;
-    private final CoupleService coupleService;
+    private final CouplesService couplesService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
+    public void assertCanAccess(Session session, Long userId) {
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
+        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
+            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
+        }
+    }
+
     public Session createSessionRequest(Long userId) {
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
 
         // 한 커플에 동시에 진행 중/대기 중 세션은 1개만 (원하면 정책 바꾸면 됨)
         Optional<Session> existing = sessionRepository.findLatestByCoupleIdAndStatusIn(
@@ -57,10 +64,7 @@ public class SessionService {
         if (session.getStatus() != SessionStatus.PENDING) {
             throw new ResponseStatusException(BAD_REQUEST, "Session is not PENDING");
         }
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
-        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
-            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
-        }
+        assertCanAccess(session, userId);
         if (Objects.equals(session.getRequestUserId(), userId)) {
             throw new ResponseStatusException(BAD_REQUEST, "Requester cannot accept");
         }
@@ -83,10 +87,7 @@ public class SessionService {
 
     public Session cancelOrFinish(Long sessionId, Long userId, EndReason reason) {
         Session session = getSessionOrThrow(sessionId);
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
-        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
-            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
-        }
+        assertCanAccess(session, userId);
         if (session.getStatus() == SessionStatus.DONE) {
             return session;
         }
@@ -114,10 +115,8 @@ public class SessionService {
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new ResponseStatusException(BAD_REQUEST, "Session is not ACTIVE");
         }
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
-        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
-            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
-        }
+        assertCanAccess(session, userId);
+        if (lat == null || lng == null) throw new ResponseStatusException(BAD_REQUEST, "lat/lng are required");
 
         LocalDateTime now = LocalDateTime.now();
         Session updated = Session.builder()
@@ -171,10 +170,7 @@ public class SessionService {
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new ResponseStatusException(BAD_REQUEST, "Session is not ACTIVE");
         }
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
-        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
-            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
-        }
+        assertCanAccess(session, userId);
 
         return sessionPointRepository.save(SessionPoint.builder()
                 .sessionId(sessionId)
@@ -197,10 +193,7 @@ public class SessionService {
         }
 
         Session session = getSessionOrThrow(sessionId);
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
-        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
-            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
-        }
+        assertCanAccess(session, userId);
 
         String original = Optional.ofNullable(file.getOriginalFilename()).orElse("photo");
         String ext = "";
@@ -231,10 +224,8 @@ public class SessionService {
 
     public List<SessionPoint> getHistory(Long sessionId, Long userId, Long sinceId, Integer limit) {
         Session session = getSessionOrThrow(sessionId);
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
-        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
-            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
-        }
+        assertCanAccess(session, userId);
+
         int l = (limit == null) ? 500 : Math.min(Math.max(limit, 1), 2000);
         if (sinceId == null) {
             List<SessionPoint> points = sessionPointRepository.findAllBySessionId(sessionId);
@@ -252,7 +243,7 @@ public class SessionService {
     }
 
     public List<Session> listSessionsForUser(Long userId) {
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
         return sessionRepository.findAllByCoupleId(couple.getId());
     }
 }

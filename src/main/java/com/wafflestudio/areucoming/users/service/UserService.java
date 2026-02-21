@@ -25,6 +25,11 @@ public class UserService {
         return new UserDto(user.getId(), user.getEmail(), user.getDisplayName());
     }
 
+    public Long getCurrentUserId(String email){
+        User user = userRepository.findByEmail(email);
+        return user.getId();
+    }
+
     public SignupResponse signup(User user){
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         User toSave = User.builder()
