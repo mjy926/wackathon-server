@@ -168,12 +168,17 @@ public class HistoryService {
         return historyList;
     }
 
-    public int getTotalMeetings(){
-        return sessionRepository.countSessionsThisMonth();
+    public int getTotalMeetings(Long coupleId){
+        return sessionRepository.countSessionsThisMonth(coupleId);
     }
 
     public StatResponse getStat(String email){
-        int totalMeetings = getTotalMeetings();
+        User user = userRepository.findByEmail(email);
+        Couples couples = couplesRepository.findByUser1IdOrUser2Id(user.getId(), user.getId());
+        if(couples == null){
+            throw new CoupleNotFoundException("couple not found");
+        }
+        int totalMeetings = getTotalMeetings(couples.getId());
         int minMinutes = Integer.MAX_VALUE;
         double totalMinutes = 0.0;
         double totalDistance = 0.0;

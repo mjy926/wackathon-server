@@ -16,6 +16,6 @@ public interface SessionRepository extends CrudRepository<Session, Long> {
     @Query("SELECT * FROM sessions WHERE couple_id = :coupleId AND status IN (:s1, :s2) ORDER BY requested_at DESC LIMIT 1")
     Optional<Session> findLatestByCoupleIdAndStatusIn(Long coupleId, SessionStatus s1, SessionStatus s2);
 
-    @Query("SELECT COUNT(*) FROM sessions WHERE requested_at >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') AND requested_at <= LAST_DAY(NOW())")
-    int countSessionsThisMonth();
+    @Query("SELECT COUNT(*) FROM sessions WHERE requested_at >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') AND requested_at <= LAST_DAY(NOW()) AND couple_id = :coupleId")
+    int countSessionsThisMonth(Long coupleId);
 }
