@@ -38,6 +38,6 @@ out/
 
 ### security ###
 .env
-
 ### firebase service account ###
 service_key.json
+
