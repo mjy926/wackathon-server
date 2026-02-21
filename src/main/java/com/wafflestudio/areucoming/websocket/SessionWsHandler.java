@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.wafflestudio.areucoming.sessions.model.EndReason;
 import com.wafflestudio.areucoming.sessions.model.SessionPointType;
 import com.wafflestudio.areucoming.sessions.service.SessionService;
 import org.springframework.stereotype.Component;
@@ -60,8 +61,8 @@ public class SessionWsHandler extends TextWebSocketHandler {
         }
 
         String type = obj.path("type").asText("");
-        if (!type.equals("POINT") && !type.equals("END")) {
-            send(session, error("UNKNOWN_TYPE", "type must be POINT|END"));
+        if (!type.equals("POINT") && !type.equals("MEET_CONFIRM") && !type.equals("CANCEL")) {
+            send(session, error("UNKNOWN_TYPE", "type must be POINT|MEET_CONFIRM|CANCEL"));
             return;
         }
 
@@ -71,7 +72,7 @@ public class SessionWsHandler extends TextWebSocketHandler {
         if (!obj.hasNonNull("ts")) obj.put("ts", System.currentTimeMillis());
 
         // 위도, 경도 포함 여부 체크
-        if (!type.equals("END")) {
+        if (type.equals("POINT") || type.equals("MEET_CONFIRM")) {
             if (!obj.hasNonNull("lat") || !obj.hasNonNull("lng")) {
                 send(session, error("MISSING_FIELD", "lat/lng required"));
                 return;
@@ -103,7 +104,7 @@ public class SessionWsHandler extends TextWebSocketHandler {
             }
 
             // photo는 이미 sessionPoint 저장한 후 save path를 받아서 다시 웹소켓으로 전파하는 구조
-            
+
             // text, photo 둘 다 없으면 그냥 위치 정보
             if (!hasText && !hasPhoto && shouldSaveLocation(sessionId, userId, now)) {
                 sessionService.addSessionPoint(
@@ -124,17 +125,20 @@ public class SessionWsHandler extends TextWebSocketHandler {
             if (s.isOpen()) s.sendMessage(new TextMessage(outbound));
         }
 
-        // END면 방 닫기
-        // @ TODO: 저 두개 분리 필요
-        // { "type": "END", "lat": 37.1, "lng": 127.1, "ts": 1730000000000 } (만남 확정)
-        // { "type": "END", "ts": 1730000000000 } (수동 취소)
-        if (type.equals("END")) {
+        if (type.equals("MEET_CONFIRM")) {
             BigDecimal lat = BigDecimal.valueOf(obj.path("lat").asDouble());
             BigDecimal lng = BigDecimal.valueOf(obj.path("lng").asDouble());
-
             sessionService.confirmMeet(sessionId, userId, lat, lng);
             closeRoom(sessionId);
             clearSession(sessionId);
+            return;
+        }
+
+        if (type.equals("CANCEL")) {
+            sessionService.cancelOrFinish(sessionId, userId, EndReason.MANUAL_CANCEL);
+            closeRoom(sessionId);
+            clearSession(sessionId);
+            return;
         }
     }
 
