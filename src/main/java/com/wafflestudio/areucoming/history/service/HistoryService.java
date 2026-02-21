@@ -67,21 +67,25 @@ public class HistoryService {
                 .toList();
     }
 
-    public SessionPointResponse getSessionPoints(String email){
+    public SessionHistoryResponse getSessionPoints(String email){
+        User user = userRepository.findByEmail(email);
         List<Long> ids = getHistoryIdList(email);
+        Couples couples = couplesRepository.findByUser1IdOrUser2Id(user.getId(), user.getId());
+        Long user1Id = couples.getUser1Id();
+        Long user2Id = couples.getUser2Id();
 
         List<SessionPoint> pointList = sessionPointRepository.findAllBySessionIdIn(ids);
-        List<PointHistoryDto> pointDtoList = pointList.stream()
-                .map(point -> new PointHistoryDto(
-                        point.getType(),
-                        point.getCreatedAt(),
-                        point.getLat(),
-                        point.getLng(),
-                        point.getPhotoPath(),
-                        point.getText()
-                )).toList();
+        List<PointHistoryDto> user1DtoList = pointList.stream()
+                .filter(point -> point.getUserId().equals(user1Id))
+                .map(this::convertToDto)
+                .toList();
 
-        return new SessionPointResponse(pointDtoList);
+        List<PointHistoryDto> user2DtoList = pointList.stream()
+                .filter(point -> point.getUserId().equals(user2Id))
+                .map(this::convertToDto)
+                .toList();
+
+        return new SessionHistoryResponse(user1DtoList, user2DtoList);
     }
 
     public int calculateDistance(SessionPoint p1, SessionPoint p2){
@@ -154,5 +158,16 @@ public class HistoryService {
         }
 
         return new StatResponse(totalMeetings, (int)(totalMinutes/len), (int)(totalDistance/len), (int)totalMinutes, (int)totalDistance, minMinutes);
+    }
+
+    private PointHistoryDto convertToDto(SessionPoint point) {
+        return new PointHistoryDto(
+                point.getType(),
+                point.getCreatedAt(),
+                point.getLat(),
+                point.getLng(),
+                point.getPhotoPath(),
+                point.getText()
+        );
     }
 }

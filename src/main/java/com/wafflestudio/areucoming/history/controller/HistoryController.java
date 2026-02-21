@@ -24,8 +24,8 @@ public class HistoryController {
     }
 
     @GetMapping("")
-    public ResponseEntity<SessionPointResponse> getSessionPointList(@AuthenticationPrincipal String email){
-        SessionPointResponse res = historyService.getSessionPoints(email);
+    public ResponseEntity<SessionHistoryResponse> getSessionPointList(@AuthenticationPrincipal String email){
+        SessionHistoryResponse res = historyService.getSessionPoints(email);
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
