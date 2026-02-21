@@ -1,9 +1,12 @@
 package com.wafflestudio.areucoming.sessions.controller;
 
-import com.wafflestudio.areucoming.photo.PhotoService;
+import com.wafflestudio.areucoming.couples.model.Couples;
+import com.wafflestudio.areucoming.couples.service.CouplesService;
 import com.wafflestudio.areucoming.sessions.dto.*;
 import com.wafflestudio.areucoming.sessions.model.Session;
 import com.wafflestudio.areucoming.sessions.model.SessionPoint;
+import com.wafflestudio.areucoming.sessions.model.SessionStatus;
+import com.wafflestudio.areucoming.sessions.repository.SessionRepository;
 import com.wafflestudio.areucoming.sessions.service.SessionService;
 import com.wafflestudio.areucoming.users.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,8 @@ import java.util.List;
 public class SessionController {
     private final SessionService sessionService;
     private final UserService userService;
+    private final CouplesService couplesService;
+    private final SessionRepository sessionRepository;
 
     /**
      * 세션 생성(요청)
@@ -31,8 +36,14 @@ public class SessionController {
     @PostMapping("")
     public ResponseEntity<Session> create(@AuthenticationPrincipal String email) {
         Long userId = userService.getCurrentUserId(email);
-        Session created = sessionService.createSessionRequest(userId);
-        return new ResponseEntity<>(created, HttpStatus.CREATED);
+
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
+        boolean hadExisting = sessionRepository.findLatestByCoupleIdAndStatusIn(
+                couple.getId(), SessionStatus.PENDING, SessionStatus.ACTIVE
+        ).isPresent();
+
+        Session createdOrExisting = sessionService.createSessionRequest(userId);
+        return new ResponseEntity<>(createdOrExisting, hadExisting ? HttpStatus.OK : HttpStatus.CREATED);
     }
 
     /**

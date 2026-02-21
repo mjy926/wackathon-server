@@ -46,7 +46,7 @@ public class SessionService {
                 couple.getId(), SessionStatus.PENDING, SessionStatus.ACTIVE
         );
         if (existing.isPresent()) {
-            throw new ResponseStatusException(CONFLICT, "Session already exists (PENDING/ACTIVE)");
+            return existing.get();
         }
 
         Session toSave = Session.builder()
