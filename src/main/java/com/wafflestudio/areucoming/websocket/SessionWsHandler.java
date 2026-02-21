@@ -4,8 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.wafflestudio.areucoming.sessions.model.SessionPointType;
+import com.wafflestudio.areucoming.sessions.service.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -14,13 +18,18 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class SessionWsHandler extends TextWebSocketHandler {
 
     private final ObjectMapper om = new ObjectMapper();
+    private final SessionService sessionService;
 
     // sessionId -> connected sockets
     private final ConcurrentHashMap<Long, Set<WebSocketSession>> rooms = new ConcurrentHashMap<>();
     
-    // 60초 주기 session point 저장을 위한 로그
+    // 3초 주기 session point 저장을 위한 로그
     private final ConcurrentHashMap<String, Long> lastSavedAt = new ConcurrentHashMap<>();
-    private static final long SAVE_INTERVAL_MS = 60_000;
+    private static final long SAVE_INTERVAL_MS = 3_000;
+
+    public SessionWsHandler(SessionService sessionService) {
+        this.sessionService = sessionService;
+    }
 
     private boolean shouldSaveLocation(long sessionId, long userId, long nowMs) {
         String key = sessionId + ":" + userId;
@@ -51,8 +60,8 @@ public class SessionWsHandler extends TextWebSocketHandler {
         }
 
         String type = obj.path("type").asText("");
-        if (!type.equals("LOCATION") && !type.equals("POINT") && !type.equals("END")) {
-            send(session, error("UNKNOWN_TYPE", "type must be LOCATION|POINT|END"));
+        if (!type.equals("POINT") && !type.equals("END")) {
+            send(session, error("UNKNOWN_TYPE", "type must be POINT|END"));
             return;
         }
 
@@ -71,19 +80,56 @@ public class SessionWsHandler extends TextWebSocketHandler {
 
         long now = System.currentTimeMillis();
 
-        if (type.equals("LOCATION")) {
-            if (shouldSaveLocation(sessionId, userId, now)) {
-                double lat = obj.path("lat").asDouble();
-                double lng = obj.path("lng").asDouble();
+        if (type.equals("POINT")) {
+            BigDecimal lat = BigDecimal.valueOf(obj.path("lat").asDouble());
+            BigDecimal lng = BigDecimal.valueOf(obj.path("lng").asDouble());
 
-                // TODO(팀 구현): JDBC insert 호출
-                // sessionPointService.insertTrack(sessionId, userId, lat, lng);
-                // type은 'TRACK' 같은 걸 추천 (POINT랑 구분)
+            String text = obj.hasNonNull("text") ? obj.get("text").asText() : null;
+            String photoPath = obj.hasNonNull("photoPath") ? obj.get("photoPath").asText() : null;
+
+            boolean hasText = text != null && !text.isBlank();
+            boolean hasPhoto = photoPath != null && !photoPath.isBlank();
+
+            // 1) text 있으면 => MEMO
+            if (hasText) {
+                sessionService.addSessionPoint(
+                        sessionId,
+                        userId,
+                        SessionPointType.MEMO,
+                        lat,
+                        lng,
+                        text
+                );
+            }
+
+            // 2) photoPath 있으면 => PHOTO
+            if (hasPhoto) {
+                // @TODO : 저장 로직 수정해야함.
+                /*
+                sessionService.addSessionPoint(
+                        sessionId,
+                        userId,
+                        SessionPointType.PHOTO,
+                        lat,
+                        lng,
+                        photoPath
+                );
+                return;
+                 */
+            }
+
+            // 3) 둘 다 없으면 그냥 위치 포인트
+            if (shouldSaveLocation(sessionId, userId, now)) {
+                sessionService.addSessionPoint(
+                        sessionId,
+                        userId,
+                        SessionPointType.POINT,
+                        lat,
+                        lng,
+                        null
+                );
             }
         }
-
-        // TODO(선택): POINT면 그냥 DB 저장(session_points INSERT)
-        // if (type.equals("POINT")) { pointService.savePoint(sessionId, userId, ...); }
 
         String outbound = om.writeValueAsString(obj);
 
@@ -92,8 +138,15 @@ public class SessionWsHandler extends TextWebSocketHandler {
             if (s.isOpen()) s.sendMessage(new TextMessage(outbound));
         }
 
-        // END면 방 닫기(선택)
+        // END면 방 닫기
+        // @ TODO: 저 두개 분리 필요
+        // { "type": "END", "lat": 37.1, "lng": 127.1, "ts": 1730000000000 } (만남 확정)
+        // { "type": "END", "ts": 1730000000000 } (수동 취소)
         if (type.equals("END")) {
+            BigDecimal lat = BigDecimal.valueOf(obj.path("lat").asDouble());
+            BigDecimal lng = BigDecimal.valueOf(obj.path("lng").asDouble());
+
+            sessionService.confirmMeet(sessionId, userId, lat, lng);
             closeRoom(sessionId);
             clearSession(sessionId);
         }

@@ -1,6 +1,12 @@
 package com.wafflestudio.areucoming.websocket;
 
 import java.util.Map;
+
+import com.wafflestudio.areucoming.auth.service.AuthService;
+import com.wafflestudio.areucoming.couples.repository.CouplesRepository;
+import com.wafflestudio.areucoming.sessions.model.SessionStatus;
+import com.wafflestudio.areucoming.sessions.repository.SessionRepository;
+import com.wafflestudio.areucoming.users.repository.UserRepository;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -14,12 +20,21 @@ public class JwtQueryHandshakeInterceptor implements HandshakeInterceptor {
     public static final String ATTR_SESSION_ID = "sessionId";
     public static final String ATTR_USER_ID = "userId";
 
-    private final JwtVerifier jwtVerifier;
-    private final SessionAuthJdbcRepository sessionAuthRepo;
+    private final AuthService authService;
+    private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
+    private final CouplesRepository couplesRepository;
 
-    public JwtQueryHandshakeInterceptor(JwtVerifier jwtVerifier, SessionAuthJdbcRepository sessionAuthRepo) {
-        this.jwtVerifier = jwtVerifier;
-        this.sessionAuthRepo = sessionAuthRepo;
+    public JwtQueryHandshakeInterceptor(
+            AuthService authService,
+            UserRepository userRepository,
+            SessionRepository sessionRepository,
+            CouplesRepository couplesRepository
+    ) {
+        this.authService = authService;
+        this.userRepository = userRepository;
+        this.sessionRepository = sessionRepository;
+        this.couplesRepository = couplesRepository;
     }
 
     @Override
@@ -45,18 +60,32 @@ public class JwtQueryHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
-        // @TODO: JWT에 해당하는 유저가 존재하는지 판정
-        final long userId;
-        try {
-            userId = jwtVerifier.verifyAndGetUserId(token);
-        } catch (Exception e) {
-            return false;
-        }
+        // 세션 ACTIVE인지 판정
+        var sessionOpt = sessionRepository.findById(sessionId);
+        if (sessionOpt.isEmpty() || sessionOpt.get().getStatus() != SessionStatus.ACTIVE) return false;
 
-        // @TODO: 그 유저가 이 세션에 참여하고 있는지 확인
-        if (!sessionAuthRepo.isParticipant(sessionId, userId)) {
-            return false;
-        }
+        // JWT 검증 + 유저 매핑
+        if (!authService.validateAccessToken(token)) return false;
+        String email = authService.getSub(token);
+        if (email == null || email.isBlank()) return false;
+
+        var user = userRepository.findByEmail(email);
+        if (user == null || user.getId() == null) return false;
+        final long userId = user.getId();
+
+        // 세션(커플)에 참여 중인지 판정
+        Long coupleId = sessionOpt.get().getCoupleId();
+        if (coupleId == null) return false;
+
+        var coupleOpt = couplesRepository.findById(coupleId);
+        if (coupleOpt.isEmpty()) return false;
+
+        var couple = coupleOpt.get();
+        boolean participant =
+                (couple.getUser1Id() != null && couple.getUser1Id().equals(userId)) ||
+                        (couple.getUser2Id() != null && couple.getUser2Id().equals(userId));
+
+        if (!participant) return false;
 
         // 핸들러에서 쓰도록 저장
         attributes.put(ATTR_SESSION_ID, sessionId);
