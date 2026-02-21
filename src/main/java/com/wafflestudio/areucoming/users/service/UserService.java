@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 
 @RequiredArgsConstructor
 @Service
@@ -22,7 +23,7 @@ public class UserService {
 
     public UserDto getCurrentUser(String email){
         User user = userRepository.findByEmail(email);
-        return new UserDto(user.getId(), user.getEmail(), user.getDisplayName());
+        return new UserDto(user.getId(), user.getEmail(), user.getDisplayName(), user.getProfileImageUrl());
     }
 
     public Long getCurrentUserId(String email){
@@ -41,7 +42,12 @@ public class UserService {
         User savedUser = userRepository.save(toSave);
 
 
-        UserDto userDto = new UserDto(savedUser.getId(), savedUser.getEmail(), savedUser.getDisplayName());
+        UserDto userDto = new UserDto(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getDisplayName(),
+                savedUser.getProfileImageUrl()
+        );
         String accessToken = authService.createAccessToken(savedUser.getEmail());
         String refreshToken = authService.createRefreshToken(savedUser.getEmail());
         return new SignupResponse(accessToken, refreshToken, userDto);
@@ -55,10 +61,34 @@ public class UserService {
         UserDto userDto = new UserDto(
                 user.getId(),
                 user.getEmail(),
-                user.getDisplayName()
+                user.getDisplayName(),
+                user.getProfileImageUrl()
         );
         String accessToken = authService.createAccessToken(user.getEmail());
         String refreshToken = authService.createRefreshToken(user.getEmail());
         return new LoginResponse(accessToken, refreshToken, userDto);
+    }
+
+    public void updateProfileImageUrl(String email, String profileImageUrl) {
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            throw new IllegalArgumentException("profileImageUrl is required");
+        }
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new NoSuchElementException("User not found");
+        }
+
+        User updatedUser = User.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .displayName(user.getDisplayName())
+                .createdAt(user.getCreatedAt())
+                .password(user.getPassword())
+                .token(user.getToken())
+                .profileImageUrl(profileImageUrl)
+                .build();
+
+        userRepository.save(updatedUser);
     }
 }
