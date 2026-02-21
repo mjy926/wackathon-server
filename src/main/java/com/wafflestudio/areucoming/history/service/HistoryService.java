@@ -34,8 +34,8 @@ public class HistoryService {
         Long user1Id = couples.getUser1Id();
         Long user2Id = couples.getUser2Id();
 
-        List<SessionPoint> user1SessionPoints = sessionPointRepository.findAllByUserIdWithSessionId(sessionId, user1Id);
-        List<SessionPoint> user2SessionPoints = sessionPointRepository.findAllByUserIdWithSessionId(sessionId, user2Id);
+        List<SessionPoint> user1SessionPoints = sessionPointRepository.findAllByUserIdWithSessionId(user1Id, sessionId);
+        List<SessionPoint> user2SessionPoints = sessionPointRepository.findAllByUserIdWithSessionId(user2Id, sessionId);
 
         List<PointHistoryDto> user1DtoList = user1SessionPoints.stream()
                 .map(point -> new PointHistoryDto(
@@ -46,6 +46,7 @@ public class HistoryService {
                         point.getPhotoPath(),
                         point.getText()
                 )).toList();
+
         List<PointHistoryDto> user2DtoList = user2SessionPoints.stream()
                 .map(point -> new PointHistoryDto(
                         point.getType(),
