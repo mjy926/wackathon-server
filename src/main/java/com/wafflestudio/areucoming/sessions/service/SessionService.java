@@ -166,8 +166,19 @@ public class SessionService {
         }
 
         Session session = getSessionOrThrow(sessionId);
-        if (session.getStatus() != SessionStatus.ACTIVE) {
-            throw new ResponseStatusException(BAD_REQUEST, "Session is not ACTIVE");
+        SessionStatus st = session.getStatus();
+        if (st == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Session status is null");
+        }
+
+        if (st == SessionStatus.DONE) {
+            throw new ResponseStatusException(BAD_REQUEST, "Session already closed");
+        }
+
+        if (st == SessionStatus.PENDING) {
+            if (session.getRequestUserId() == null || !session.getRequestUserId().equals(userId)) {
+                throw new ResponseStatusException(FORBIDDEN, "Only requester can write during PENDING");
+            }
         }
         assertCanAccess(session, userId);
 
