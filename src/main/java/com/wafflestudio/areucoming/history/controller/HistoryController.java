@@ -1,9 +1,6 @@
 package com.wafflestudio.areucoming.history.controller;
 
-import com.wafflestudio.areucoming.history.dto.HistoryListResponse;
-import com.wafflestudio.areucoming.history.dto.SessionHistoryResponse;
-import com.wafflestudio.areucoming.history.dto.HistoryDto;
-import com.wafflestudio.areucoming.history.dto.SessionPointResponse;
+import com.wafflestudio.areucoming.history.dto.*;
 import com.wafflestudio.areucoming.history.service.HistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +26,12 @@ public class HistoryController {
     @GetMapping("")
     public ResponseEntity<SessionPointResponse> getSessionPointList(@AuthenticationPrincipal String email){
         SessionPointResponse res = historyService.getSessionPoints(email);
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @GetMapping("/stat")
+    public ResponseEntity<StatResponse> getStat(@AuthenticationPrincipal String email){
+        StatResponse res = historyService.getStat(email);
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
