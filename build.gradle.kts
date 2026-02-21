@@ -25,6 +25,8 @@ dependencies {
 	implementation("org.flywaydb:flyway-mysql")
     implementation("io.jsonwebtoken:jjwt:0.12.3")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
 	runtimeOnly("com.mysql:mysql-connector-j")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
