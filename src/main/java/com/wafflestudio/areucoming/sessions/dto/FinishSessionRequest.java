@@ -5,6 +5,5 @@ import lombok.Getter;
 
 @Getter
 public class FinishSessionRequest {
-    private Long userId;
     private EndReason reason; // optional: default MANUAL_CANCEL
 }

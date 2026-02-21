@@ -32,6 +32,14 @@ public class SessionService {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
+    public void assertCanAccess(Long sessionId, Long userId) {
+        Session session = getSessionOrThrow(sessionId);
+        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
+        if (!Objects.equals(couple.getId(), session.getCoupleId())) {
+            throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
+        }
+    }
+
     public Session createSessionRequest(Long userId) {
         Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
 

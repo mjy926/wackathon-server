@@ -4,10 +4,12 @@ import com.wafflestudio.areucoming.sessions.dto.*;
 import com.wafflestudio.areucoming.sessions.model.Session;
 import com.wafflestudio.areucoming.sessions.model.SessionPoint;
 import com.wafflestudio.areucoming.sessions.service.SessionService;
+import com.wafflestudio.areucoming.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,16 +21,16 @@ import java.util.List;
 @RequestMapping({"/api/sessions", "/sessions"})
 public class SessionController {
     private final SessionService sessionService;
-
-    // @TODO : 지금 User Id를 명시적으로 받아오고 있는데, JWT 토큰 기반 해야 할듯 
+    private final UserService userService;
 
     /**
      * 세션 생성(요청)
      * - userId 기준으로 couple_id를 찾아 status = PENDING 세션 생성
      */
     @PostMapping("")
-    public ResponseEntity<Session> create(@RequestBody CreateSessionRequest req) {
-        Session created = sessionService.createSessionRequest(req.getUserId());
+    public ResponseEntity<Session> create(@AuthenticationPrincipal String email) {
+        Long userId = userService.getCurrentUserId(email);
+        Session created = sessionService.createSessionRequest(userId);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
@@ -36,7 +38,8 @@ public class SessionController {
      * 내가 속한 커플의 세션 목록
      */
     @GetMapping("")
-    public ResponseEntity<List<Session>> list(@RequestParam("userId") Long userId) {
+    public ResponseEntity<List<Session>> list(@AuthenticationPrincipal String email) {
+        Long userId = userService.getCurrentUserId(email);
         return ResponseEntity.ok(sessionService.listSessionsForUser(userId));
     }
 
@@ -46,8 +49,9 @@ public class SessionController {
     @GetMapping("/{sessionId}/status")
     public ResponseEntity<SessionStatusResponse> status(
             @PathVariable Long sessionId,
-            @RequestParam("userId") Long userId
+            @AuthenticationPrincipal String email
     ) {
+        Long userId = userService.getCurrentUserId(email);
         Session s = sessionService.getSessionOrThrow(sessionId);
         // 접근 체크는 history에서 하는 방식과 동일하게 하기 위해 service 호출
         sessionService.getHistory(sessionId, userId, 0L, 1);
@@ -62,24 +66,38 @@ public class SessionController {
      * 세션 수락(PENDING -> ACTIVE)
      */
     @PostMapping("/{sessionId}/accept")
-    public ResponseEntity<Session> accept(@PathVariable Long sessionId, @RequestBody AcceptSessionRequest req) {
-        return ResponseEntity.ok(sessionService.acceptSession(sessionId, req.getUserId()));
+    public ResponseEntity<Session> accept(
+            @PathVariable Long sessionId,
+            @AuthenticationPrincipal String email
+    ) {
+        Long userId = userService.getCurrentUserId(email);
+        return ResponseEntity.ok(sessionService.acceptSession(sessionId, userId));
     }
 
     /**
      * 만남 기록 버튼 (세션 자체 meet_at/meet_lat/meet_lng 저장 + history에도 MEET_DONE 포인트)
      */
     @PostMapping("/{sessionId}/meet")
-    public ResponseEntity<Session> confirmMeet(@PathVariable Long sessionId, @RequestBody MeetConfirmRequest req) {
-        return ResponseEntity.ok(sessionService.confirmMeet(sessionId, req.getUserId(), req.getLat(), req.getLng()));
+    public ResponseEntity<Session> confirmMeet(
+            @PathVariable Long sessionId,
+            @AuthenticationPrincipal String email,
+            @RequestBody MeetConfirmRequest req
+    ) {
+        Long userId = userService.getCurrentUserId(email);
+        return ResponseEntity.ok(sessionService.confirmMeet(sessionId, userId, req.getLat(), req.getLng()));
     }
 
     /**
      * 세션 종료 (ACTIVE/PENDING -> DONE)
      */
     @PostMapping("/{sessionId}/finish")
-    public ResponseEntity<Session> finish(@PathVariable Long sessionId, @RequestBody FinishSessionRequest req) {
-        return ResponseEntity.ok(sessionService.cancelOrFinish(sessionId, req.getUserId(), req.getReason()));
+    public ResponseEntity<Session> finish(
+            @PathVariable Long sessionId,
+            @AuthenticationPrincipal String email,
+            @RequestBody FinishSessionRequest req
+    ) {
+        Long userId = userService.getCurrentUserId(email);
+        return ResponseEntity.ok(sessionService.cancelOrFinish(sessionId, userId, req.getReason()));
     }
 
     /**
@@ -91,12 +109,14 @@ public class SessionController {
     @PostMapping("/{sessionId}/points")
     public ResponseEntity<SessionPoint> addPoint(
             @PathVariable Long sessionId,
+            @AuthenticationPrincipal String email,
             @RequestBody CreateSessionPointRequest req
     ) {
+        Long userId = userService.getCurrentUserId(email);
         return new ResponseEntity<>(
                 sessionService.addSessionPoint(
                         sessionId,
-                        req.getUserId(),
+                        userId,
                         req.getType(),
                         req.getLat(),
                         req.getLng(),
@@ -114,11 +134,12 @@ public class SessionController {
     @PostMapping(value = "/{sessionId}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SessionPoint> uploadPhoto(
             @PathVariable Long sessionId,
-            @RequestParam("userId") Long userId,
+            @AuthenticationPrincipal String email,
             @RequestPart("file") MultipartFile file,
             @RequestParam("lat") BigDecimal lat,
             @RequestParam("lng") BigDecimal lng
     ) {
+        Long userId = userService.getCurrentUserId(email);
         return new ResponseEntity<>(
                 sessionService.uploadPhoto(sessionId, userId, file, lat, lng),
                 HttpStatus.CREATED
@@ -133,10 +154,11 @@ public class SessionController {
     @GetMapping("/{sessionId}/history")
     public ResponseEntity<HistoryResponse> history(
             @PathVariable Long sessionId,
-            @RequestParam("userId") Long userId,
+            @AuthenticationPrincipal String email,
             @RequestParam(value = "sinceId", required = false) Long sinceId,
             @RequestParam(value = "limit", required = false) Integer limit
     ) {
+        Long userId = userService.getCurrentUserId(email);
         List<SessionPoint> points = sessionService.getHistory(sessionId, userId, sinceId, limit);
         return ResponseEntity.ok(new HistoryResponse(sessionId, points));
     }
