@@ -1,6 +1,7 @@
 package com.wafflestudio.areucoming.couples.service;
 
 import com.wafflestudio.areucoming.couples.exceptions.ExpiredInvitesException;
+import com.wafflestudio.areucoming.couples.exceptions.InvitesNotFoundException;
 import com.wafflestudio.areucoming.couples.model.Code;
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.model.Invites;
@@ -43,7 +44,14 @@ public class InvitesService {
 
     public Invites joinInvites(String code, String email){
         User user1 = userRepository.findByEmail(email);
-        Invites invites = invitesRepository.findByCode(code).get();
+        Invites invites;
+        Optional<Invites> optionalInvites = invitesRepository.findByCode(code);
+        if(optionalInvites.isPresent()){
+            invites = optionalInvites.get();
+        }
+        else{
+            throw new InvitesNotFoundException("Invites not found");
+        }
         User user2 = userRepository.findById(invites.getInviterUserId()).get();
         if(invites.getUsedAt() != null){
             throw new ExpiredInvitesException("used invites");

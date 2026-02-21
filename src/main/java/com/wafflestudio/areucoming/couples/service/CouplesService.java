@@ -1,5 +1,6 @@
 package com.wafflestudio.areucoming.couples.service;
 
+import com.wafflestudio.areucoming.couples.exceptions.CoupleNotFoundException;
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.repository.CouplesRepository;
 import com.wafflestudio.areucoming.users.model.User;
@@ -7,8 +8,6 @@ import com.wafflestudio.areucoming.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -22,6 +21,9 @@ public class CouplesService {
         User user = userRepository.findByEmail(email);
         Long userId = user.getId();
         Couples couples = couplesRepository.findByUser1IdOrUser2Id(userId, userId);
+        if(couples == null){
+            throw new CoupleNotFoundException("Couple not found");
+        }
 
         return couples;
     }
