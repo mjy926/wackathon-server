@@ -7,6 +7,6 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class SessionIdResponse {
-    List<Long> ids;
+public class SessionPointResponse {
+    List<PointHistoryDto> pointHistoryList;
 }

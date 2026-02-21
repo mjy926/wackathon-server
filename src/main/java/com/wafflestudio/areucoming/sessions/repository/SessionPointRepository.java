@@ -16,4 +16,7 @@ public interface SessionPointRepository extends CrudRepository<SessionPoint, Lon
 
     @Query("SELECT * FROM session_points WHERE session_id = :sessionId AND user_id = :userId")
     List<SessionPoint> findAllByUserIdWithSessionId(Long userId, Long sessionId);
+
+    List<SessionPoint> findAllBySessionIdIn(List<Long> sessionIds);
+    List<SessionPoint> findAllBySessionIdOrderByCreatedAtAsc(Long sessionId);
 }
