@@ -125,7 +125,7 @@ public class SessionService {
                 .coupleId(session.getCoupleId())
                 .requestUserId(session.getRequestUserId())
                 .requestedAt(session.getRequestedAt())
-                .status(session.getStatus())
+                .status(SessionStatus.DONE)
                 .startAt(session.getStartAt())
                 .endAt(session.getEndAt())
                 .endReason(session.getEndReason())

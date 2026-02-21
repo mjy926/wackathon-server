@@ -20,6 +20,8 @@ import java.util.List;
 public class SessionController {
     private final SessionService sessionService;
 
+    // @TODO : 지금 User Id를 명시적으로 받아오고 있는데, JWT 토큰 기반 해야 할듯 
+
     /**
      * 세션 생성(요청)
      * - userId 기준으로 couple_id를 찾아 status = PENDING 세션 생성
@@ -67,7 +69,7 @@ public class SessionController {
     /**
      * 만남 기록 버튼 (세션 자체 meet_at/meet_lat/meet_lng 저장 + history에도 MEET_DONE 포인트)
      */
-    @PostMapping("/{sessionId}/meetings")
+    @PostMapping("/{sessionId}/meet")
     public ResponseEntity<Session> confirmMeet(@PathVariable Long sessionId, @RequestBody MeetConfirmRequest req) {
         return ResponseEntity.ok(sessionService.confirmMeet(sessionId, req.getUserId(), req.getLat(), req.getLng()));
     }
@@ -81,7 +83,7 @@ public class SessionController {
     }
 
     /**
-     * (웹소켓이 없을 때) 세션 포인트 저장용 REST
+     * 세션 포인트 저장용 REST
      * - type: POINT or MEMO
      * - MEMO면 text 필요
      * - lat/lng는 둘 다 넣게(권장)
