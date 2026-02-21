@@ -90,7 +90,7 @@ public class SessionWsHandler extends TextWebSocketHandler {
             boolean hasText = text != null && !text.isBlank();
             boolean hasPhoto = photoPath != null && !photoPath.isBlank();
 
-            // 1) text 있으면 => MEMO
+            // text 있으면 => MEMO
             if (hasText) {
                 sessionService.addSessionPoint(
                         sessionId,
@@ -102,24 +102,10 @@ public class SessionWsHandler extends TextWebSocketHandler {
                 );
             }
 
-            // 2) photoPath 있으면 => PHOTO
-            if (hasPhoto) {
-                // @TODO : 저장 로직 수정해야함.
-                /*
-                sessionService.addSessionPoint(
-                        sessionId,
-                        userId,
-                        SessionPointType.PHOTO,
-                        lat,
-                        lng,
-                        photoPath
-                );
-                return;
-                 */
-            }
-
-            // 3) 둘 다 없으면 그냥 위치 포인트
-            if (shouldSaveLocation(sessionId, userId, now)) {
+            // photo는 이미 sessionPoint 저장한 후 save path를 받아서 다시 웹소켓으로 전파하는 구조
+            
+            // text, photo 둘 다 없으면 그냥 위치 정보
+            if (!hasText && !hasPhoto && shouldSaveLocation(sessionId, userId, now)) {
                 sessionService.addSessionPoint(
                         sessionId,
                         userId,

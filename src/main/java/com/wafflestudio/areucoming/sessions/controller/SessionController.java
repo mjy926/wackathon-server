@@ -1,5 +1,6 @@
 package com.wafflestudio.areucoming.sessions.controller;
 
+import com.wafflestudio.areucoming.photo.PhotoService;
 import com.wafflestudio.areucoming.sessions.dto.*;
 import com.wafflestudio.areucoming.sessions.model.Session;
 import com.wafflestudio.areucoming.sessions.model.SessionPoint;
@@ -89,10 +90,8 @@ public class SessionController {
 
     /**
      * 사진 업로드 (multipart/form-data)
-     * - file: 사진
-     * - userId: 업로더
      */
-    @PostMapping(value = "/{sessionId}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{sessionId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SessionPoint> uploadPhoto(
             @PathVariable Long sessionId,
             @AuthenticationPrincipal String email,
