@@ -62,6 +62,17 @@ jobs:
           username: ${{secrets.EC2_USERNAME}}
           key: ${{secrets.EC2_SSH_KEY}}
           script: |
+            set -e
             cd ~/deploy
-            sudo docker-compose pull app
-            sudo docker-compose up -d
+
+            # hackathon만 내림 (DB 볼륨 유지됨: -v 안 씀)
+            sudo docker compose -p hackathon down --remove-orphans
+
+            # 최신 이미지 받기
+            sudo docker compose -p hackathon pull app
+
+            # 다시 올리기
+            sudo docker compose -p hackathon up -d
+
+            # 사용되지 않는(dangling) 이미지만 정리 (서버 전체지만 매우 보수적)
+            sudo docker image prune -f
