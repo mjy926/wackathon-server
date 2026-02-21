@@ -21,6 +21,8 @@ services:
       - "8080:8080"
     depends_on:
       - db
+    env_file:
+      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: user
