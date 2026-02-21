@@ -60,11 +60,7 @@ public class JwtQueryHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
-        // 세션 ACTIVE인지 판정
-        var sessionOpt = sessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty() || sessionOpt.get().getStatus() != SessionStatus.ACTIVE) return false;
-
-        // JWT 검증 + 유저 매핑
+        // 1) JWT 검증 + 유저 매핑
         if (!authService.validateAccessToken(token)) return false;
         String email = authService.getSub(token);
         if (email == null || email.isBlank()) return false;
@@ -73,7 +69,24 @@ public class JwtQueryHandshakeInterceptor implements HandshakeInterceptor {
         if (user == null || user.getId() == null) return false;
         final long userId = user.getId();
 
-        // 세션(커플)에 참여 중인지 판정
+        // 2) 세션 조회
+        var sessionOpt = sessionRepository.findById(sessionId);
+        if (sessionOpt.isEmpty()) return false;
+        var sess = sessionOpt.get();
+
+        // 3) 상태 체크:
+        // - ACTIVE면 참가자 누구나 OK
+        // - PENDING이면 생성자(requestUserId)만 OK
+        var status = sess.getStatus();
+        if (status == null) return false;
+
+        if (status == SessionStatus.PENDING) {
+            if (sess.getRequestUserId() == null || !sess.getRequestUserId().equals(userId)) return false;
+        } else if (status != SessionStatus.ACTIVE) {
+            return false;
+        }
+
+        // 4) 세션(커플)에 참여 중인지 판정
         Long coupleId = sessionOpt.get().getCoupleId();
         if (coupleId == null) return false;
 
