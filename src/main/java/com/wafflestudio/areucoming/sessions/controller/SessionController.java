@@ -56,6 +56,22 @@ public class SessionController {
     }
 
     /**
+     * 내가 속한 커플의 현재 열려있는 최신 세션 확인 (없으면 null)
+     */
+    @GetMapping("/active")
+    public ResponseEntity<ActiveSessionResponse> active(@AuthenticationPrincipal String email) {
+        Long userId = userService.getCurrentUserId(email);
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
+
+        Long sessionId = sessionRepository
+                .findLatestByCoupleIdAndStatusIn(couple.getId(), SessionStatus.PENDING, SessionStatus.ACTIVE)
+                .map(Session::getId)
+                .orElse(null);
+
+        return ResponseEntity.ok(new ActiveSessionResponse(sessionId));
+    }
+
+    /**
      * 현재 세션 상태 확인
      */
     @GetMapping("/{sessionId}/status")
