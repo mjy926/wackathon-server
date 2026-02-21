@@ -23,6 +23,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-mysql")
+    implementation("io.jsonwebtoken:jjwt:0.12.3")
+    implementation("org.springframework.boot:spring-boot-starter-security")
 	runtimeOnly("com.mysql:mysql-connector-j")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
