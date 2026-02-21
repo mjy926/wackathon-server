@@ -1,6 +1,7 @@
 package com.wafflestudio.areucoming.history.service;
 
 import com.wafflestudio.areucoming.common.utils.DistanceCalculator;
+import com.wafflestudio.areucoming.couples.exceptions.CoupleNotFoundException;
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.repository.CouplesRepository;
 import com.wafflestudio.areucoming.history.dto.*;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -28,6 +30,10 @@ public class HistoryService {
     public SessionHistoryResponse getSessionHistory(Long sessionId, String email){
         User user = userRepository.findByEmail(email);
         Couples couples = couplesRepository.findByUser1IdOrUser2Id(user.getId(), user.getId());
+        if(couples == null){
+            throw new CoupleNotFoundException("couple not found");
+        }
+
         Long user1Id = couples.getUser1Id();
         Long user2Id = couples.getUser2Id();
 
@@ -59,6 +65,9 @@ public class HistoryService {
     public List<Long> getHistoryIdList(String email){
         User user = userRepository.findByEmail(email);
         Couples couples = couplesRepository.findByUser1IdOrUser2Id(user.getId(), user.getId());
+        if(couples == null){
+            throw new CoupleNotFoundException("couple not found");
+        }
         Long coupleId = couples.getId();
         List<Session> sessions = sessionRepository.findAllByCoupleId(coupleId);
 
@@ -71,6 +80,9 @@ public class HistoryService {
         User user = userRepository.findByEmail(email);
         List<Long> ids = getHistoryIdList(email);
         Couples couples = couplesRepository.findByUser1IdOrUser2Id(user.getId(), user.getId());
+        if(couples == null){
+            throw new CoupleNotFoundException("couple not found");
+        }
         Long user1Id = couples.getUser1Id();
         Long user2Id = couples.getUser2Id();
 
@@ -114,7 +126,14 @@ public class HistoryService {
 
     public int getTotalDistanceInSession(Long sessionId){
         Session s = sessionRepository.findById(sessionId).get();
-        Couples couple = couplesRepository.findById(s.getCoupleId()).get();
+        Couples couple;
+        Optional<Couples> optionalCouple = couplesRepository.findById(s.getCoupleId());
+        if(optionalCouple.isPresent()){
+            couple = optionalCouple.get();
+        }
+        else{
+            throw new CoupleNotFoundException("couple not found");
+        }
         User user1 = userRepository.findById(couple.getUser1Id()).get();
         User user2 = userRepository.findById(couple.getUser2Id()).get();
         double totalDistance = getUserDistanceInSession(sessionId, user1.getEmail()) + getUserDistanceInSession(sessionId, user2.getEmail());
