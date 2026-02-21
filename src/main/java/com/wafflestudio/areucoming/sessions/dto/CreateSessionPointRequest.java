@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 
 @Getter
 public class CreateSessionPointRequest {
-    private Long userId;
     private SessionPointType type;
     private BigDecimal lat;
     private BigDecimal lng;
