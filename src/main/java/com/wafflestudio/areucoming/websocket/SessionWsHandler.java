@@ -17,6 +17,21 @@ public class SessionWsHandler extends TextWebSocketHandler {
 
     // sessionId -> connected sockets
     private final ConcurrentHashMap<Long, Set<WebSocketSession>> rooms = new ConcurrentHashMap<>();
+    
+    // 60초 주기 session point 저장을 위한 로그
+    private final ConcurrentHashMap<String, Long> lastSavedAt = new ConcurrentHashMap<>();
+    private static final long SAVE_INTERVAL_MS = 60_000;
+
+    private boolean shouldSaveLocation(long sessionId, long userId, long nowMs) {
+        String key = sessionId + ":" + userId;
+
+        Long prev = lastSavedAt.get(key);
+        if (prev == null || nowMs - prev >= SAVE_INTERVAL_MS) {
+            lastSavedAt.put(key, nowMs);
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -54,8 +69,20 @@ public class SessionWsHandler extends TextWebSocketHandler {
             }
         }
 
-        // TODO(선택): POINT면 DB 저장(session_points INSERT)
-        // 근데 location 도 저장해야 할 수도 ..? 이건 모르겠음
+        long now = System.currentTimeMillis();
+
+        if (type.equals("LOCATION")) {
+            if (shouldSaveLocation(sessionId, userId, now)) {
+                double lat = obj.path("lat").asDouble();
+                double lng = obj.path("lng").asDouble();
+
+                // TODO(팀 구현): JDBC insert 호출
+                // sessionPointService.insertTrack(sessionId, userId, lat, lng);
+                // type은 'TRACK' 같은 걸 추천 (POINT랑 구분)
+            }
+        }
+
+        // TODO(선택): POINT면 그냥 DB 저장(session_points INSERT)
         // if (type.equals("POINT")) { pointService.savePoint(sessionId, userId, ...); }
 
         String outbound = om.writeValueAsString(obj);
@@ -68,6 +95,7 @@ public class SessionWsHandler extends TextWebSocketHandler {
         // END면 방 닫기(선택)
         if (type.equals("END")) {
             closeRoom(sessionId);
+            clearSession(sessionId);
         }
     }
 
@@ -87,6 +115,11 @@ public class SessionWsHandler extends TextWebSocketHandler {
         for (WebSocketSession s : set) {
             if (s.isOpen()) s.close(CloseStatus.NORMAL);
         }
+    }
+
+    private void clearSession(long sessionId) {
+        String prefix = sessionId + ":";
+        lastSavedAt.keySet().removeIf(k -> k.startsWith(prefix));
     }
 
     private void send(WebSocketSession s, String json) throws IOException {
