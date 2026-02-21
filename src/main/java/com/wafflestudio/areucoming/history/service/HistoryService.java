@@ -157,7 +157,7 @@ public class HistoryService {
                 throw new SessionNotFoundException("session not found");
             }
             if(session.getStartAt() == null || session.getEndAt() == null){
-                throw new TimeNotFoundException("session time not found");
+                continue;
             }
             long travelTime = Duration.between(session.getStartAt(), session.getEndAt()).toMinutes();
 
