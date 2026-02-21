@@ -28,4 +28,7 @@ public class User {
 
     String password;
     String token;
+
+    @Column("profile_image_url")
+    String profileImageUrl;
 }
