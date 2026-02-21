@@ -1,7 +1,7 @@
 package com.wafflestudio.areucoming.sessions.service;
 
-import com.wafflestudio.areucoming.couples.model.Couple;
-import com.wafflestudio.areucoming.couples.service.CoupleService;
+import com.wafflestudio.areucoming.couples.model.Couples;
+import com.wafflestudio.areucoming.couples.service.CouplesService;
 import com.wafflestudio.areucoming.sessions.model.*;
 import com.wafflestudio.areucoming.sessions.repository.SessionPointRepository;
 import com.wafflestudio.areucoming.sessions.repository.SessionRepository;
@@ -27,20 +27,20 @@ import static org.springframework.http.HttpStatus.*;
 public class SessionService {
     private final SessionRepository sessionRepository;
     private final SessionPointRepository sessionPointRepository;
-    private final CoupleService coupleService;
+    private final CouplesService couplesService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
     public void assertCanAccess(Session session, Long userId) {
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
         if (!Objects.equals(couple.getId(), session.getCoupleId())) {
             throw new ResponseStatusException(FORBIDDEN, "User is not in this session's couple");
         }
     }
 
     public Session createSessionRequest(Long userId) {
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
 
         // 한 커플에 동시에 진행 중/대기 중 세션은 1개만 (원하면 정책 바꾸면 됨)
         Optional<Session> existing = sessionRepository.findLatestByCoupleIdAndStatusIn(
@@ -243,7 +243,7 @@ public class SessionService {
     }
 
     public List<Session> listSessionsForUser(Long userId) {
-        Couple couple = coupleService.getCoupleByUserIdOrThrow(userId);
+        Couples couple = couplesService.getCoupleByUserIdOrThrow(userId);
         return sessionRepository.findAllByCoupleId(couple.getId());
     }
 }
