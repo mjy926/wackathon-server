@@ -20,6 +20,11 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
+    public UserDto getCurrentUser(String email){
+        User user = userRepository.findByEmail(email);
+        return new UserDto(user.getId(), user.getEmail(), user.getDisplayName());
+    }
+
     public SignupResponse signup(User user){
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         User toSave = User.builder()
