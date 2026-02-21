@@ -2,6 +2,7 @@ package com.wafflestudio.areucoming.sessions.service;
 
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.service.CouplesService;
+import com.wafflestudio.areucoming.photo.PhotoService;
 import com.wafflestudio.areucoming.sessions.model.*;
 import com.wafflestudio.areucoming.sessions.repository.SessionPointRepository;
 import com.wafflestudio.areucoming.sessions.repository.SessionRepository;
@@ -14,9 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -28,6 +26,7 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final SessionPointRepository sessionPointRepository;
     private final CouplesService couplesService;
+    private final PhotoService photoService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -126,8 +125,8 @@ public class SessionService {
                 .requestedAt(session.getRequestedAt())
                 .status(SessionStatus.DONE)
                 .startAt(session.getStartAt())
-                .endAt(session.getEndAt())
-                .endReason(session.getEndReason())
+                .endAt(now)
+                .endReason(EndReason.MEET_CONFIRMED)
                 .meetAt(now)
                 .meetLat(lat)
                 .meetLng(lng)
@@ -195,19 +194,12 @@ public class SessionService {
         Session session = getSessionOrThrow(sessionId);
         assertCanAccess(session, userId);
 
-        String original = Optional.ofNullable(file.getOriginalFilename()).orElse("photo");
-        String ext = "";
-        int dot = original.lastIndexOf('.');
-        if (dot >= 0) ext = original.substring(dot);
-        String filename = UUID.randomUUID() + ext;
+        if (session.getStatus() != SessionStatus.ACTIVE) {
+            throw new ResponseStatusException(BAD_REQUEST, "Session is not ACTIVE");
+        }
 
-        Path dir = Paths.get(uploadDir, "sessions", String.valueOf(sessionId));
         try {
-            Files.createDirectories(dir);
-            Path saved = dir.resolve(filename);
-            file.transferTo(saved);
-            String photoPath = dir.resolve(filename).toString().replace("\\\\", "/");
-
+            String imageUrl = photoService.saveFile(userId, file); // S3 업로드하고, 결과 URL 받기
             return sessionPointRepository.save(SessionPoint.builder()
                     .sessionId(sessionId)
                     .userId(userId)
@@ -215,7 +207,7 @@ public class SessionService {
                     .createdAt(LocalDateTime.now())
                     .lat(lat)
                     .lng(lng)
-                    .photoPath(photoPath)
+                    .photoPath(imageUrl)
                     .build());
         } catch (IOException e) {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Failed to save file");
