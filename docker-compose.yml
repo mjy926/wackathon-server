@@ -21,6 +21,8 @@ services:
       - "8080:8080"
     depends_on:
       - db
+    volumes:
+      - ./environment/service_key.json:/app/service_key.json
     env_file:
       - ./environment/.env
     environment:
