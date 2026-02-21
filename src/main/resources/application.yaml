@@ -15,3 +15,21 @@ spring:
 
 firebase:
   service-account-path: ./service_key.json
+
+app:
+  cors:
+    allowed-origins: http://localhost:*,https://localhost:*,http://127.0.0.1:*,https://127.0.0.1:*,http://d2z3q2wfhh6j6x.cloudfront.net,https://d2z3q2wfhh6j6x.cloudfront.net
+JWT_SECRET: testtestjwttesttestjwttesttestjwttesttestjwttesttestjwt
+
+
+cloud:
+  aws:
+    s3:
+      bucket: wackathon-proj-bucket
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false

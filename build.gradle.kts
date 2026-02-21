@@ -23,6 +23,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-mysql")
+    implementation("io.jsonwebtoken:jjwt:0.12.3")
+    implementation("org.springframework.boot:spring-boot-starter-security")
 	runtimeOnly("com.mysql:mysql-connector-j")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
@@ -35,6 +37,10 @@ dependencies {
 
 	/* push notification */
 	implementation("com.google.firebase:firebase-admin:9.2.0")
+
+	implementation("org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE")
+
+	implementation("me.paulschwarz:spring-dotenv:4.0.0")
 
 
 }
