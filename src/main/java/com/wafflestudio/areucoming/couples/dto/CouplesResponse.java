@@ -1,5 +1,6 @@
 package com.wafflestudio.areucoming.couples.dto;
 
+import com.wafflestudio.areucoming.auth.dto.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -7,6 +8,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class CouplesResponse {
     Long id;
-    Long user1_id;
-    Long user2_id;
+    UserDto user1;
+    UserDto user2;
 }
