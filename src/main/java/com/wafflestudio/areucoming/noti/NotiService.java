@@ -39,7 +39,7 @@ public class NotiService {
     /**
      * Send location-share enabled notification to partner
      */
-    public String notifyLocationShareEnabled(long requesterUserId)
+    public String notifyLocationShareEnabled(long requesterUserId, String requesterName)
             throws FirebaseMessagingException {
 
         Long partnerUserId = notiRepository.findPartnerUserId(requesterUserId)
@@ -50,12 +50,9 @@ public class NotiService {
                 .orElseThrow(() ->
                         new IllegalStateException("Partner token not found"));
 
-        String requesterName =
-                notiRepository.findUserDisplayName(requesterUserId)
-                        .orElse("상대");
-
         String title = "위치공유";
-        String body = requesterName + "님께서 위치공유를 활성화했습니다.";
+        String body = (requesterName == null || requesterName.isBlank() ? "상대" : requesterName)
+                + "님께서 위치공유를 활성화했습니다.";
 
 
         /* 알림 클릭 이벤트 후 js에서 파싱할 파트너 데이터 */
