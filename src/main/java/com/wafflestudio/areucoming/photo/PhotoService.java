@@ -20,9 +20,16 @@ public class PhotoService {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
-    public String saveFile(MultipartFile multipartFile) throws IOException {
+    public String saveFile(Long userId, MultipartFile multipartFile) throws IOException {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("유효한 userId가 필요합니다.");
+        }
+
         String originalFilename = multipartFile.getOriginalFilename();
-        String key = "images/" + UUID.randomUUID() + "_" + originalFilename;
+        String safeFilename = (originalFilename == null || originalFilename.isBlank())
+                ? "unknown"
+                : originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
+        String key = "images/user-" + userId + "/" + UUID.randomUUID() + "_" + safeFilename;
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(multipartFile.getSize());
