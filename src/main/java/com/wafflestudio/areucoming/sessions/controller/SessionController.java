@@ -1,5 +1,6 @@
 package com.wafflestudio.areucoming.sessions.controller;
 
+import com.wafflestudio.areucoming.photo.PhotoService;
 import com.wafflestudio.areucoming.sessions.dto.*;
 import com.wafflestudio.areucoming.sessions.model.Session;
 import com.wafflestudio.areucoming.sessions.model.SessionPoint;
@@ -18,7 +19,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({"/api/sessions", "/sessions"})
+@RequestMapping({"/api/sessions"})
 public class SessionController {
     private final SessionService sessionService;
     private final UserService userService;
@@ -75,19 +76,6 @@ public class SessionController {
     }
 
     /**
-     * 만남 기록 버튼 (세션 자체 meet_at/meet_lat/meet_lng 저장 + history에도 MEET_DONE 포인트)
-     */
-    @PostMapping("/{sessionId}/meet")
-    public ResponseEntity<Session> confirmMeet(
-            @PathVariable Long sessionId,
-            @AuthenticationPrincipal String email,
-            @RequestBody MeetConfirmRequest req
-    ) {
-        Long userId = userService.getCurrentUserId(email);
-        return ResponseEntity.ok(sessionService.confirmMeet(sessionId, userId, req.getLat(), req.getLng()));
-    }
-
-    /**
      * 세션 종료 (ACTIVE/PENDING -> DONE)
      */
     @PostMapping("/{sessionId}/finish")
@@ -101,37 +89,9 @@ public class SessionController {
     }
 
     /**
-     * 세션 포인트 저장용 REST
-     * - type: POINT or MEMO
-     * - MEMO면 text 필요
-     * - lat/lng는 둘 다 넣게(권장)
-     */
-    @PostMapping("/{sessionId}/points")
-    public ResponseEntity<SessionPoint> addPoint(
-            @PathVariable Long sessionId,
-            @AuthenticationPrincipal String email,
-            @RequestBody CreateSessionPointRequest req
-    ) {
-        Long userId = userService.getCurrentUserId(email);
-        return new ResponseEntity<>(
-                sessionService.addSessionPoint(
-                        sessionId,
-                        userId,
-                        req.getType(),
-                        req.getLat(),
-                        req.getLng(),
-                        req.getText()
-                ),
-                HttpStatus.CREATED
-        );
-    }
-
-    /**
      * 사진 업로드 (multipart/form-data)
-     * - file: 사진
-     * - userId: 업로더
      */
-    @PostMapping(value = "/{sessionId}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{sessionId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SessionPoint> uploadPhoto(
             @PathVariable Long sessionId,
             @AuthenticationPrincipal String email,
