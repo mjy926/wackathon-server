@@ -10,3 +10,5 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+JWT_SECRET: testtestjwttesttestjwttesttestjwttesttestjwttesttestjwt
