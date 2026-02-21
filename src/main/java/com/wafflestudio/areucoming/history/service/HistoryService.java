@@ -5,6 +5,8 @@ import com.wafflestudio.areucoming.couples.exceptions.CoupleNotFoundException;
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.repository.CouplesRepository;
 import com.wafflestudio.areucoming.history.dto.*;
+import com.wafflestudio.areucoming.history.exceptions.SessionNotFoundException;
+import com.wafflestudio.areucoming.history.exceptions.TimeNotFoundException;
 import com.wafflestudio.areucoming.sessions.model.Session;
 import com.wafflestudio.areucoming.sessions.model.SessionPoint;
 import com.wafflestudio.areucoming.sessions.repository.SessionPointRepository;
@@ -143,10 +145,20 @@ public class HistoryService {
     public List<HistoryDto> getHistoryList(String email){
         List<Long> ids = getHistoryIdList(email);
         List<HistoryDto> historyList = new ArrayList<>();
+        Session session;
 
         for(Long sessionId : ids){
             int dis = getTotalDistanceInSession(sessionId);
-            Session session = sessionRepository.findById(sessionId).get();
+            Optional<Session> optionalSession = sessionRepository.findById(sessionId);
+            if(optionalSession.isPresent()){
+                session = optionalSession.get();
+            }
+            else{
+                throw new SessionNotFoundException("session not found");
+            }
+            if(session.getStartAt() == null || session.getEndAt() == null){
+                throw new TimeNotFoundException("session time not found");
+            }
             long travelTime = Duration.between(session.getStartAt(), session.getEndAt()).toMinutes();
 
             HistoryDto res = new HistoryDto(sessionId, session.getMeetAt(), travelTime, dis);
