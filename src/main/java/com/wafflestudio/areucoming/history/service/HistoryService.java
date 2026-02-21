@@ -3,10 +3,7 @@ package com.wafflestudio.areucoming.history.service;
 import com.wafflestudio.areucoming.common.utils.DistanceCalculator;
 import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.repository.CouplesRepository;
-import com.wafflestudio.areucoming.history.dto.HistoryDto;
-import com.wafflestudio.areucoming.history.dto.PointHistoryDto;
-import com.wafflestudio.areucoming.history.dto.SessionHistoryResponse;
-import com.wafflestudio.areucoming.history.dto.SessionPointResponse;
+import com.wafflestudio.areucoming.history.dto.*;
 import com.wafflestudio.areucoming.sessions.model.Session;
 import com.wafflestudio.areucoming.sessions.model.SessionPoint;
 import com.wafflestudio.areucoming.sessions.repository.SessionPointRepository;
@@ -133,5 +130,28 @@ public class HistoryService {
         }
 
         return historyList;
+    }
+
+    public int getTotalMeetings(){
+        return sessionRepository.countSessionsThisMonth();
+    }
+
+    public StatResponse getStat(String email){
+        int totalMeetings = getTotalMeetings();
+        int minMinutes = Integer.MAX_VALUE;
+        double totalMinutes = 0.0;
+        double totalDistance = 0.0;
+
+        List<HistoryDto> historyList = getHistoryList(email);
+        int len = historyList.size();
+        for(HistoryDto h : historyList){
+            totalMinutes += h.getTravelMinutes();
+            totalDistance += h.getDistance();
+            if(h.getTravelMinutes() < minMinutes){
+                minMinutes = (int)h.getTravelMinutes();
+            }
+        }
+
+        return new StatResponse(totalMeetings, (int)(totalMinutes/len), (int)(totalDistance/len), (int)totalMinutes, (int)totalDistance, minMinutes);
     }
 }
