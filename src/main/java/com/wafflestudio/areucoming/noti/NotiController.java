@@ -1,9 +1,12 @@
 package com.wafflestudio.areucoming.noti;
 
+import com.wafflestudio.areucoming.auth.dto.UserDto;
+import com.wafflestudio.areucoming.users.service.UserService;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -13,25 +16,28 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class NotiController {
     private final NotiService notiService;
+    private final UserService userService;
 
-    /* TODO : 요청 스키마(임시) */
-    public record RegisterTokenRequest(Long userId, String token) {}
-    /* TODO : 요청 스키마(임시) */
-    public record NotifyPartnerRequest(Long requesterUserId) {}
+    public record RegisterTokenRequest(String token) {}
 
-    /* TODO : jwt token을 받는 방식으로 수정 필요. */
     /**
      * Client registers its FCM token.
     **/
     @PostMapping("/token")
     public ResponseEntity<?> registerToken(
+            @AuthenticationPrincipal String email,
             @RequestBody RegisterTokenRequest request
     ) {
         try {
-            if (request == null || request.userId() == null) {
-                throw new IllegalArgumentException("userId is required");
+            if (email == null || email.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Unauthorized"));
             }
-            notiService.registerUserToken(request.userId(), request.token());
+            if (request == null) {
+                throw new IllegalArgumentException("Request body is required");
+            }
+            UserDto userDto = userService.getCurrentUser(email);
+            notiService.registerUserToken(userDto.getId(), request.token());
             return ResponseEntity.ok(Map.of("message", "Token registered"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
@@ -48,15 +54,15 @@ public class NotiController {
      * User requests to send a push notification to their partner.
      */
     @PostMapping("/partner")
-    public ResponseEntity<?> sendToPartner(
-            @RequestBody NotifyPartnerRequest request
-    ) {
+    public ResponseEntity<?> sendToPartner(@AuthenticationPrincipal String email) {
         try {
-            if (request == null || request.requesterUserId() == null) {
-                throw new IllegalArgumentException("requesterUserId is required");
+            if (email == null || email.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Unauthorized"));
             }
+            UserDto userDto = userService.getCurrentUser(email);
             String messageId =
-                    notiService.notifyLocationShareEnabled(request.requesterUserId());
+                    notiService.notifyLocationShareEnabled(userDto.getId(), userDto.getNickname());
             return ResponseEntity.ok(Map.of("messageId", messageId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
