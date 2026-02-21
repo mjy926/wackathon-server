@@ -39,4 +39,8 @@ public class CouplesService {
         if(toDelete == null) throw new ResponseStatusException(NOT_FOUND, "Couple not found");
         couplesRepository.deleteById(toDelete.getId());
     }
+
+    public User getUserById(Long userId){
+        return userRepository.findById(userId).get();
+    }
 }

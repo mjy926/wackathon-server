@@ -1,5 +1,6 @@
 package com.wafflestudio.areucoming.couples.controller;
 
+import com.wafflestudio.areucoming.auth.dto.UserDto;
 import com.wafflestudio.areucoming.couples.dto.CouplesResponse;
 import com.wafflestudio.areucoming.couples.dto.InvitesRequest;
 import com.wafflestudio.areucoming.couples.dto.InvitesResponse;
@@ -7,6 +8,8 @@ import com.wafflestudio.areucoming.couples.model.Couples;
 import com.wafflestudio.areucoming.couples.model.Invites;
 import com.wafflestudio.areucoming.couples.service.CouplesService;
 import com.wafflestudio.areucoming.couples.service.InvitesService;
+import com.wafflestudio.areucoming.users.model.User;
+import com.wafflestudio.areucoming.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +57,15 @@ public class CouplesController {
     @GetMapping("/profile")
     public ResponseEntity<CouplesResponse> getCouplesInfo(@AuthenticationPrincipal String email){
         Couples couples = couplesService.getCouplesInfo(email);
-        CouplesResponse res = new CouplesResponse(couples.getId(), couples.getUser1Id(), couples.getUser2Id());
+        User dbUser1 = couplesService.getUserById(couples.getUser1Id());
+        User dbUser2 = couplesService.getUserById(couples.getUser2Id());
+
+        User me = dbUser1.getEmail().equals(email) ? dbUser1 : dbUser2;
+        User partner = dbUser1.getEmail().equals(email) ? dbUser2 : dbUser1;
+
+        UserDto user1Dto = new UserDto(me.getId(), me.getEmail(), me.getDisplayName(), me.getProfileImageUrl());
+        UserDto user2Dto = new UserDto(partner.getId(), partner.getEmail(), partner.getDisplayName(), partner.getProfileImageUrl());
+        CouplesResponse res = new CouplesResponse(couples.getId(), user1Dto, user2Dto);
 
         return new ResponseEntity<>(res, HttpStatus.OK);
     }
